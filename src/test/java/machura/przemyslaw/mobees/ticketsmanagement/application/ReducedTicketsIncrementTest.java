@@ -36,6 +36,7 @@ public class ReducedTicketsIncrementTest {
     @InjectMocks
     private SalesPeriodsService salesPeriodsService;
 
+    // todo improve
     @ParameterizedTest
     @MethodSource("salesPeriodsReducedTicketIncrementTestCases")
     public void shouldCreateQuarterlySalesPeriod(Utils.SalesPeriodsTestCase testCase) {

@@ -46,6 +46,7 @@ public class SalesPeriodsServiceCreateTest {
         Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(150));
 
         assertTrue(salesPeriodMaybe.isLeft());
+        assertTrue(salesPeriodMaybe.getLeft().getStatus().equals(Failure.Status.ILLEGAL_INPUT));
         verify(persistenceService, never()).createAll(salesPeriod);
     }
 
