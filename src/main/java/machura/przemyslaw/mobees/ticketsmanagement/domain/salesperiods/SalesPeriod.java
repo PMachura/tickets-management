@@ -37,53 +37,53 @@ public class SalesPeriod {
     }
 
     public Either<Failure, Success> adjustTickets(TicketsAdjuster ticketsAdjuster,
-                                                  TimeProvider timeProvider){
-        if(isOpen(timeProvider)){
+                                                  TimeProvider timeProvider) {
+        if (isOpen(timeProvider)) {
             ticketsAdjuster.adjust(footballMatchTickets);
             return Either.right(Success.from("Tickets adjustment performed"));
         }
 
-        return Either.left(Failure.from("Sales period closed"));
+        return Either.left(Failure.from("Sales period closed", Failure.Status.IMPROPER_REQUEST));
     }
 
-    public boolean isOpen(TimeProvider timeProvider){
+    public boolean isOpen(TimeProvider timeProvider) {
         LocalDate now = timeProvider.now();
         return now.isEqual(startDate)
                 || now.isEqual(endDate)
                 || (now.isAfter(startDate) && now.isBefore(endDate));
     }
 
-    public int matchesWithOpenSale(TimeProvider timeProvider){
+    public int matchesWithOpenSale(TimeProvider timeProvider) {
         return (int) footballMatchTickets.stream()
                 .filter(matTickets -> matTickets.isSaleOpen(timeProvider))
                 .count();
     }
 
-    public int matchesWithClosedSale(TimeProvider timeProvider){
+    public int matchesWithClosedSale(TimeProvider timeProvider) {
         return (int) footballMatchTickets.stream()
                 .filter(matTickets -> matTickets.isSaleClosed(timeProvider))
                 .count();
     }
 
-    public int matchesWhereTotalTicketsPoolIsEmpty(){
+    public int matchesWhereTotalTicketsPoolIsEmpty() {
         return (int) footballMatchTickets.stream()
                 .filter(FootballMatchTickets::isTotalTicketPoolEmpty)
                 .count();
     }
 
-    public int reducedTicketsPool(){
+    public int reducedTicketsPool() {
         return footballMatchTickets.stream()
                 .map(FootballMatchTickets::getReducedTicketsPool)
                 .reduce(0, Integer::sum);
     }
 
-    public int totalTicketsPool(){
+    public int totalTicketsPool() {
         return footballMatchTickets.stream()
                 .map(FootballMatchTickets::getTotalTicketsPool)
                 .reduce(0, Integer::sum);
     }
 
-    public int reservedTickets(){
+    public int reservedTickets() {
         return footballMatchTickets.stream()
                 .map(FootballMatchTickets::getReservedTickets)
                 .reduce(0, Integer::sum);

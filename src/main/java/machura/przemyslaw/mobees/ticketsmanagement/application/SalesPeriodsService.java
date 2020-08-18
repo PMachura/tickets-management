@@ -1,7 +1,6 @@
 package machura.przemyslaw.mobees.ticketsmanagement.application;
 
 import io.vavr.control.Either;
-import io.vavr.control.Try;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import machura.przemyslaw.mobees.ticketsmanagement.api.salesperiods.AdjustReducedTicketsRequest;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Optional;
 
 @Component
@@ -32,28 +32,19 @@ public class SalesPeriodsService {
         return persistenceService.findByQuarterRange(LocalDate.now())
                 .flatMap(salesPeriods -> salesPeriods.isEmpty() ?
                         createQuarterlySalesPeriod(request.getReducedTicketsPool())
-                        : Either.left(Failure.from("Sales period already exists")));
+                        : Either.left(Failure.from("Sales period already exists", Failure.Status.ILLEGAL_INPUT)));
     }
 
     public Either<Failure, SalesPeriod> adjustTicketsForQuarterlySalesPeriod(AdjustReducedTicketsRequest request) {
         return persistenceService.findByQuarterRange(request.getSalesPeriodDate())
-                .flatMap(salesPeriods -> salesPeriods.isEmpty() ?
-                        Either.left(Failure.from("Sales period does not exists"))
-                        :
-                        getProperTicketsAdjuster(request)
-                                .map(ticketsAdjuster -> salesPeriods.get(0).adjustTickets(ticketsAdjuster, timeProvider)
-                                        .flatMap(success -> persistenceService.updateAll(salesPeriods.get(0))))
-                                .orElseGet(() -> Either.left(Failure.from("Bad reduced tickets change " + request.getReducedTicketsChange()))));
+                .flatMap(this::validateFoundQuarterlyAndGet)
+                .flatMap(salesPeriod -> adjustTicketsForQuarterlySalesPeriod(request, salesPeriod));
     }
 
-    public Either<Failure, Optional<SalesPeriod>> findQuarterlySalesPeriod(LocalDate localDate) {
+
+    public Either<Failure, SalesPeriod> findQuarterlySalesPeriod(LocalDate localDate) {
         return persistenceService.findByQuarterRange(localDate)
-                .flatMap(salesPeriods -> salesPeriods.size() > 1 ?
-                        Either.left(Failure.from(String.format("Illegal server state. %d sales periods found.", salesPeriods.size())))
-                        :
-                        Try.ofSupplier(() -> salesPeriods.get(0))
-                                .map(found -> Either.<Failure, Optional<SalesPeriod>>right(Optional.of(found)))
-                                .getOrElseGet(emptyList -> Either.right(Optional.empty())));
+                .flatMap(this::validateFoundQuarterlyAndGet);
     }
 
     private Either<Failure, SalesPeriod> createQuarterlySalesPeriod(int reducedTicketsPool) {
@@ -68,6 +59,19 @@ public class SalesPeriodsService {
         );
 
         return persistenceService.createAll(quarterly);
+    }
+
+    private Either<Failure, SalesPeriod> validateFoundQuarterlyAndGet(Collection<SalesPeriod> salesPeriods){
+        if(salesPeriods.isEmpty()) return Either.left(Failure.from("Not found", Failure.Status.RESOURCE_NOT_FOUND));
+        if(salesPeriods.size() > 1) return Either.left(Failure.from(String.format("Illegal server state. %d sales periods found.", salesPeriods.size()), Failure.Status.SERVER_ERROR));
+        return Either.right(salesPeriods.stream().findFirst().get());
+    }
+
+    private Either<Failure, SalesPeriod> adjustTicketsForQuarterlySalesPeriod(AdjustReducedTicketsRequest request, SalesPeriod salesPeriod){
+        return getProperTicketsAdjuster(request)
+                .map(ticketsAdjuster -> salesPeriod.adjustTickets(ticketsAdjuster, timeProvider)
+                        .flatMap(success -> persistenceService.updateAll(salesPeriod)))
+                .orElseGet(() -> Either.left(Failure.from("Bad reduced tickets change " + request.getReducedTicketsChange(), Failure.Status.ILLEGAL_INPUT)));
     }
 
     private Optional<? extends TicketsAdjuster> getProperTicketsAdjuster(AdjustReducedTicketsRequest request) {
