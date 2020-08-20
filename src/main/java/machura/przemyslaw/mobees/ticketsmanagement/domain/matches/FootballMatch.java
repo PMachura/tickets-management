@@ -3,7 +3,6 @@ package machura.przemyslaw.mobees.ticketsmanagement.domain.matches;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import machura.przemyslaw.mobees.ticketsmanagement.common.TimeProvider;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -18,12 +17,12 @@ public class FootballMatch {
     private final Long id;
     private final LocalDate matchDate;
 
-    public boolean isPast(TimeProvider timeProvider) {
-        return matchDate.isBefore(timeProvider.now()) || matchDate.isEqual(timeProvider.now());
+    public boolean isPast(LocalDate localDate) {
+        return matchDate.isBefore(localDate) || matchDate.isEqual(localDate);
     }
 
-    public boolean isInPlanningPhase(TimeProvider timeProvider) {
-        return matchDate.isAfter(timeProvider.now());
+    public boolean isInPlanningPhase(LocalDate localDate) {
+        return matchDate.isAfter(localDate);
     }
 
     public LocalDate getMatchDate() {

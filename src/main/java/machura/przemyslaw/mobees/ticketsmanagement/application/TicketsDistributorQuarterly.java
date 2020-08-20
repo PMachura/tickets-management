@@ -2,7 +2,6 @@ package machura.przemyslaw.mobees.ticketsmanagement.application;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import machura.przemyslaw.mobees.ticketsmanagement.common.TimeProvider;
 import machura.przemyslaw.mobees.ticketsmanagement.common.Utils;
 import machura.przemyslaw.mobees.ticketsmanagement.domain.matches.FootballMatch;
 import machura.przemyslaw.mobees.ticketsmanagement.domain.salesperiods.SalesPeriodSpec;
@@ -20,14 +19,13 @@ import java.util.stream.Stream;
 class TicketsDistributorQuarterly implements TicketsDistributor {
 
     private final SalesPeriodSpec salesPeriodSpec;
-    private final TimeProvider timeProvider;
 
     @Override
     public List<FootballMatchTickets> distributeTickets(Collection<? extends FootballMatch> footballMatches) {
         List<FootballMatch> sortedMatches = FootballMatch.sortByMatchDate(footballMatches);
 
-        List<FootballMatch> pastMatches = sortedMatches.stream().filter(match -> match.isPast(timeProvider)).collect(Collectors.toList());
-        List<FootballMatch> plannedMatches = sortedMatches.stream().filter(match -> match.isInPlanningPhase(timeProvider)).collect(Collectors.toList());
+        List<FootballMatch> pastMatches = sortedMatches.stream().filter(match -> match.isPast(salesPeriodSpec.requestDate())).collect(Collectors.toList());
+        List<FootballMatch> plannedMatches = sortedMatches.stream().filter(match -> match.isInPlanningPhase(salesPeriodSpec.requestDate())).collect(Collectors.toList());
 
         List<FootballMatchTickets> ticketsForPastMatches = distributeTicketsForPastMatches(pastMatches);
         List<FootballMatchTickets> ticketsForPlannedMatches = distributeTicketsForPlannedMatches(

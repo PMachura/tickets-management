@@ -4,7 +4,10 @@ import io.vavr.control.Either;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import machura.przemyslaw.mobees.ticketsmanagement.common.Failure;
+import machura.przemyslaw.mobees.ticketsmanagement.common.Success;
+import machura.przemyslaw.mobees.ticketsmanagement.domain.matches.FootballMatch;
 import machura.przemyslaw.mobees.ticketsmanagement.domain.salesperiods.SalesPeriod;
+import machura.przemyslaw.mobees.ticketsmanagement.domain.tickets.FootballMatchTickets;
 import machura.przemyslaw.mobees.ticketsmanagement.persistence.mappers.SalesPeriodMapper;
 import machura.przemyslaw.mobees.ticketsmanagement.persistence.model.FootballMatchDAO;
 import machura.przemyslaw.mobees.ticketsmanagement.persistence.model.FootballMatchTicketsDAO;
@@ -26,8 +29,16 @@ public class SalesPeriodsPersistenceService {
     private final FootballMatchRepository footballMatchRepository;
     private final FootballMatchTicketsRepository footballMatchTicketsRepository;
 
+    @Transactional
     public Either<Failure, SalesPeriod> createAll(SalesPeriod salesPeriod) {
         return Try.ofSupplier(() -> createOrUpdateAllUnchecked(salesPeriod))
+                .toEither()
+                .mapLeft(throwable -> Failure.from(DEFAULT_ERROR_MESSAGE));
+    }
+
+    @Transactional
+    public Either<Failure, Success> deleteAll(SalesPeriod salesPeriod) {
+        return Try.of(() -> deleteAllUnchecked(salesPeriod))
                 .toEither()
                 .mapLeft(throwable -> Failure.from(DEFAULT_ERROR_MESSAGE));
     }
@@ -48,6 +59,21 @@ public class SalesPeriodsPersistenceService {
         return salesPeriodsRepository.findByQuarterRange(date).stream()
                 .map(SalesPeriodMapper::map)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    protected Success deleteAllUnchecked(SalesPeriod salesPeriod){
+        List<Long> matchTicketsIds = salesPeriod.getFootballMatchTickets().stream()
+                .map(FootballMatchTickets::getId).collect(Collectors.toList());
+        List<Long> matchesIds = salesPeriod.getFootballMatchTickets().stream()
+                .map(FootballMatchTickets::getFootballMatch)
+                .map(FootballMatch::getId)
+                .collect(Collectors.toList());
+
+        footballMatchTicketsRepository.deleteByIdIn(matchTicketsIds);
+        footballMatchRepository.deleteByIdIn(matchesIds);
+        salesPeriodsRepository.deleteById(salesPeriod.getId());
+        return Success.from("Sales period " + salesPeriod.getStartDate() + " : " + salesPeriod.getEndDate() + " deleted");
     }
 
     @Transactional

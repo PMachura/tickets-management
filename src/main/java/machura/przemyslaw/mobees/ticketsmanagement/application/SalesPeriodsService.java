@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import machura.przemyslaw.mobees.ticketsmanagement.api.salesperiods.AdjustReducedTicketsRequest;
 import machura.przemyslaw.mobees.ticketsmanagement.api.salesperiods.CreateQuarterlyRequest;
 import machura.przemyslaw.mobees.ticketsmanagement.common.Failure;
+import machura.przemyslaw.mobees.ticketsmanagement.common.Success;
 import machura.przemyslaw.mobees.ticketsmanagement.common.TimeProvider;
 import machura.przemyslaw.mobees.ticketsmanagement.domain.salesperiods.SalesPeriod;
 import machura.przemyslaw.mobees.ticketsmanagement.domain.tickets.TicketsAdjuster;
@@ -29,10 +30,17 @@ public class SalesPeriodsService {
     private final TimeProvider timeProvider;
 
     public Either<Failure, SalesPeriod> create(CreateQuarterlyRequest request) {
-        return persistenceService.findByQuarterRange(LocalDate.now())
+        LocalDate salesPeriodDate = request.getSalesPeriodDate().orElseGet(() -> timeProvider.now());
+        return persistenceService.findByQuarterRange(salesPeriodDate)
                 .flatMap(salesPeriods -> salesPeriods.isEmpty() ?
-                        createQuarterlySalesPeriod(request.getReducedTicketsPool())
+                        createQuarterlySalesPeriod(salesPeriodDate, request.getReducedTicketsPool())
                         : Either.left(Failure.from("Sales period already exists", Failure.Status.ILLEGAL_INPUT)));
+    }
+
+    public Either<Failure, Success> deleteQuarterlySalesPeriod(LocalDate localDate) {
+        return persistenceService.findByQuarterRange(localDate)
+                .flatMap(this::validateFoundQuarterlyAndGet)
+                .flatMap(persistenceService::deleteAll);
     }
 
     public Either<Failure, SalesPeriod> adjustTicketsForQuarterlySalesPeriod(AdjustReducedTicketsRequest request) {
@@ -47,15 +55,15 @@ public class SalesPeriodsService {
                 .flatMap(this::validateFoundQuarterlyAndGet);
     }
 
-    private Either<Failure, SalesPeriod> createQuarterlySalesPeriod(int reducedTicketsPool) {
+    private Either<Failure, SalesPeriod> createQuarterlySalesPeriod(LocalDate date, int reducedTicketsPool) {
         SalesPeriodSpecQuarterly createSalesPeriodQuarterly = SalesPeriodSpecQuarterly.from(
-                LocalDate.now(), GAME_DAY, SINGLE_MATCH_TOTAL_TICKET_POOL, reducedTicketsPool
+                date, GAME_DAY, SINGLE_MATCH_TOTAL_TICKET_POOL, reducedTicketsPool
         );
 
         SalesPeriod quarterly = SalesPeriod.create(
                 createSalesPeriodQuarterly,
                 new MatchPlanningPolicyQuarterly(createSalesPeriodQuarterly),
-                new TicketsDistributorQuarterly(createSalesPeriodQuarterly, timeProvider)
+                new TicketsDistributorQuarterly(createSalesPeriodQuarterly)
         );
 
         return persistenceService.createAll(quarterly);

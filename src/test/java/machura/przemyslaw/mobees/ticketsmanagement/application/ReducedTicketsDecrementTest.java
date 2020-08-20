@@ -44,7 +44,7 @@ public class ReducedTicketsDecrementTest {
         when(persistenceService.createAll(any(SalesPeriod.class))).thenAnswer(i -> Either.right(i.getArgument(0)));
         when(persistenceService.findByQuarterRange(any(LocalDate.class))).thenReturn(Either.right(Collections.emptyList()));
 
-        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(testCase.requestReducedTicketPool));
+        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(testCase.requestReducedTicketPool, null));
         SalesPeriod salesPeriod = salesPeriodMaybe.get();
 
         when(timeProvider.now()).thenReturn(testCase.adjustReducedTicketsRequestDate);

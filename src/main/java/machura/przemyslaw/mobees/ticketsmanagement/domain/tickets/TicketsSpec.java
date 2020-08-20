@@ -41,7 +41,7 @@ public class TicketsSpec {
 
         int decrementCompliesWithNotReservedTickets = Math.min(requestedDecrementValue, getNotReservedTickets());
         int newReducedTicketsPool = Math.max(0, reducedTicketsPool - decrementCompliesWithNotReservedTickets);
-        int diff = newReducedTicketsPool - reducedTicketsPool;
+        int diff = reducedTicketsPool - newReducedTicketsPool;
         reducedTicketsPool = newReducedTicketsPool;
         return diff;
     }

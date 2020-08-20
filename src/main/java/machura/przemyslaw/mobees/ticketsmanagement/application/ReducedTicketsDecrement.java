@@ -20,26 +20,27 @@ class ReducedTicketsDecrement implements TicketsAdjuster {
     private final TimeProvider timeProvider;
 
     public static Optional<ReducedTicketsDecrement> create(TimeProvider timeProvider,
-                                                           int reducedTicketsChange){
+                                                           int reducedTicketsChange) {
         return reducedTicketsChange < 0 ?
                 Optional.of(new ReducedTicketsDecrement(-reducedTicketsChange, timeProvider)) : Optional.empty();
     }
 
+    // todo consider to return new objects without modifying given collection
     @Override
     public List<FootballMatchTickets> adjust(Collection<? extends FootballMatchTickets> matchTickets) {
-        List<FootballMatchTickets> sortedMatchTickets = FootballMatchTickets.sortByMatchDate(matchTickets);
-
-        List<FootballMatchTickets> matchesWithOpenSale = sortedMatchTickets.stream()
+        List<FootballMatchTickets> sortedWithOpenSale = matchTickets.stream()
                 .filter(footballMatchTickets -> footballMatchTickets.isSaleOpen(timeProvider))
+                .sorted(FootballMatchTickets.byReducedTicketsPoolComparator.reversed()
+                        .thenComparing(FootballMatchTickets.byMatchDateComparator))
                 .collect(Collectors.toList());
 
-        List<Integer> decrementPerMatch = Utils.splitEvenlyWithReminder(reducedTicketDecrement, matchesWithOpenSale.size());
+        List<Integer> decrementPerMatch = Utils.splitEvenlyWithReminder(reducedTicketDecrement, sortedWithOpenSale.size());
 
-        IntStream.range(0, matchesWithOpenSale.size())
-                .forEach(matchNumber -> matchesWithOpenSale.get(matchNumber)
+        IntStream.range(0, sortedWithOpenSale.size())
+                .forEach(matchNumber -> sortedWithOpenSale.get(matchNumber)
                         .decrementReducedTicketsPool(decrementPerMatch.get(matchNumber))
                 );
 
-        return sortedMatchTickets;
+        return FootballMatchTickets.sortByMatchDate(matchTickets);
     }
 }

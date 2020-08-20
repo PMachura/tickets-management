@@ -20,6 +20,31 @@ public class FootballMatchTickets {
     private final FootballMatch footballMatch;
     private final TicketsSpec ticketsSpec;
 
+    public static Comparator<FootballMatchTickets> byMatchDateComparator = Comparator.comparing(FootballMatchTickets::getMatchDate);
+    public static Comparator<FootballMatchTickets> byReducedTicketsPoolComparator = Comparator.comparing(FootballMatchTickets::getReducedTicketsPool);
+
+    public static List<FootballMatchTickets> sortByMatchDate(Collection<? extends FootballMatchTickets> matchTickets) {
+        return matchTickets.stream()
+                .sorted(byMatchDateComparator)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @param requestedIncrementValue should be >= 0
+     * @return approved value difference, also >= 0
+     */
+    public int incrementReducedTicketsPool(int requestedIncrementValue) {
+        return ticketsSpec.incrementReducedTicketsPoolAndReturnDiff(requestedIncrementValue);
+    }
+
+    /**
+     * @param requestedDecrementValue should be >= 0
+     * @return approved value difference, also >= 0
+     */
+    public int decrementReducedTicketsPool(int requestedDecrementValue) {
+        return ticketsSpec.decrementReducedTicketsPoolAndReturnDiff(requestedDecrementValue);
+    }
+
     public Long getId() {
         return id;
     }
@@ -28,34 +53,20 @@ public class FootballMatchTickets {
         return footballMatch;
     }
 
-    public static List<FootballMatchTickets> sortByMatchDate(Collection<? extends FootballMatchTickets> matchTickets){
-        return matchTickets.stream()
-                .sorted(Comparator.comparing(FootballMatchTickets::getMatchDate))
-                .collect(Collectors.toList());
-    }
-
-    public int incrementReducedTicketsPool(int requestedIncrementValue){
-        return ticketsSpec.incrementReducedTicketsPoolAndReturnDiff(requestedIncrementValue);
-    }
-
-    public int decrementReducedTicketsPool(int requestedDecreaseValue){
-        return ticketsSpec.decrementReducedTicketsPoolAndReturnDiff(requestedDecreaseValue);
-    }
-
-    public LocalDate getMatchDate(){
+    public LocalDate getMatchDate() {
         return footballMatch.getMatchDate();
     }
 
-    public boolean isTotalTicketPoolEmpty(){
+    public boolean isTotalTicketPoolEmpty() {
         return getTotalTicketsPool() == 0;
     }
 
-    public boolean isSaleOpen(TimeProvider timeProvider){
-        return footballMatch.isInPlanningPhase(timeProvider);
+    public boolean isSaleOpen(TimeProvider timeProvider) {
+        return footballMatch.isInPlanningPhase(timeProvider.now());
     }
 
-    public boolean isSaleClosed(TimeProvider timeProvider){
-        return footballMatch.isPast(timeProvider);
+    public boolean isSaleClosed(TimeProvider timeProvider) {
+        return footballMatch.isPast(timeProvider.now());
     }
 
     public int getTotalTicketsPool() {

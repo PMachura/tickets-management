@@ -23,6 +23,7 @@ public class SalesPeriodsController {
 
     private static final String QUARTERLY_PATH = "quarterly";
     private static final String QUARTERLY_GET_PATH = "quarterly/{date}";
+    private static final String QUARTERLY_DELETE_PATH = "quarterly/{date}";
     private static final String QUARTERLY_ADJUST_REDUCED_TICKETS_PATH = QUARTERLY_PATH + "/adjust-reduced-tickets";
 
     private static final Function<Failure, ResponseEntity> illegalInputHandler = failure -> ResponseEntity.badRequest().body(failure.getReason());
@@ -51,6 +52,14 @@ public class SalesPeriodsController {
         return salesPeriodsService.findQuarterlySalesPeriod(date)
                 .fold(SalesPeriodsController::getResponseFromFailure,
                         salesPeriod -> ResponseEntity.status(HttpStatus.OK).body(SalesPeriodSnapshot.from(salesPeriod)));
+
+    }
+
+    @DeleteMapping(path = QUARTERLY_DELETE_PATH)
+    public ResponseEntity deleteQuarterlySalesPeriod(@PathVariable("date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+        return salesPeriodsService.deleteQuarterlySalesPeriod(date)
+                .fold(SalesPeriodsController::getResponseFromFailure,
+                        success -> ResponseEntity.status(HttpStatus.OK).body(success.getMessage()));
 
     }
 

@@ -41,9 +41,9 @@ public class SalesPeriodsServiceCreateTest {
     @Test
     public void shouldNotCreateSalesPeriodIfItAlreadyExists(){
         SalesPeriod salesPeriod = Mockito.mock(SalesPeriod.class);
-        when(persistenceService.findByQuarterRange(any(LocalDate.class))).thenReturn(Either.right(Collections.singletonList(salesPeriod)));
+        when(persistenceService.findByQuarterRange(any())).thenReturn(Either.right(Collections.singletonList(salesPeriod)));
 
-        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(150));
+        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest( 150, null));
 
         assertTrue(salesPeriodMaybe.isLeft());
         assertTrue(salesPeriodMaybe.getLeft().getStatus().equals(Failure.Status.ILLEGAL_INPUT));
@@ -56,7 +56,7 @@ public class SalesPeriodsServiceCreateTest {
         when(persistenceService.findByQuarterRange(any(LocalDate.class))).thenReturn(Either.right(Collections.emptyList()));
         when(persistenceService.createAll(any(SalesPeriod.class))).thenReturn(Either.left(Failure.from("Persistence service error")));
 
-        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(150));
+        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(150, null));
 
         assertTrue(salesPeriodMaybe.isLeft());
     }
@@ -68,7 +68,7 @@ public class SalesPeriodsServiceCreateTest {
         when(persistenceService.createAll(any(SalesPeriod.class))).thenAnswer(i -> Either.right(i.getArgument(0)));
         when(persistenceService.findByQuarterRange(any(LocalDate.class))).thenReturn(Either.right(Collections.emptyList()));
 
-        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(testCase.requestReducedTicketPool));
+        Either<Failure, SalesPeriod> salesPeriodMaybe = salesPeriodsService.create(new CreateQuarterlyRequest(testCase.requestReducedTicketPool, null));
 
         assertTrue(salesPeriodMaybe.isRight());
         SalesPeriod salesPeriod = salesPeriodMaybe.get();
